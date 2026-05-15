@@ -5,16 +5,19 @@ import {
   slots as slotsApi,
   reservations as reservationsApi,
 } from '../../api/endpoints';
-import { photoURL } from '../../api/axios';
 import SlotGrid from '../../components/SlotGrid';
 import ChatBox from '../../components/ChatBox';
 import AddressLine from '../../components/AddressLine';
+import Carousel from '../../components/Carousel';
 import { useAuth } from '../../context/AuthContext';
+import { useToast, useConfirm } from '../../components/feedback';
 
 export default function StadiumDetails() {
   const { id } = useParams();
   const location = useLocation();
   const { user } = useAuth();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [stadium, setStadium] = useState(null);
   const [dates, setDates] = useState([]);
   const [slots, setSlots] = useState([]);
@@ -38,27 +41,41 @@ export default function StadiumDetails() {
 
   const handleSlotClick = async (slot) => {
     if (!user || user.role !== 'user') {
-      alert('Sign in as a match organizer to reserve.');
+      toast.error('Sign in as a match organizer to reserve.');
       return;
     }
     const mine = slot.reservedBy === user.id;
     if (mine) {
-      if (!confirm(`Cancel your reservation on ${slot.date} at ${slot.startTime}?`)) return;
+      const ok = await confirm({
+        title: 'Cancel reservation?',
+        message: `Your booking for ${slot.date} at ${slot.startTime} will be released.`,
+        confirmLabel: 'Cancel reservation',
+        cancelLabel: 'Keep it',
+        danger: true,
+      });
+      if (!ok) return;
       try {
         await reservationsApi.cancel(slot._id);
+        toast.success('Reservation cancelled');
         refresh();
       } catch (e) {
-        alert(e?.response?.data?.error || 'Could not cancel');
+        toast.error(e?.response?.data?.error || 'Could not cancel');
       }
       return;
     }
     if (slot.status !== 'available') return;
-    if (!confirm(`Reserve ${slot.date} at ${slot.startTime}?`)) return;
+    const ok = await confirm({
+      title: 'Reserve this slot?',
+      message: `${slot.date} at ${slot.startTime}–${slot.endTime}`,
+      confirmLabel: 'Reserve',
+    });
+    if (!ok) return;
     try {
       await reservationsApi.reserve(slot._id);
+      toast.success('Slot reserved');
       refresh();
     } catch (e) {
-      alert(e?.response?.data?.error || 'Could not reserve');
+      toast.error(e?.response?.data?.error || 'Could not reserve');
     }
   };
 
@@ -73,22 +90,7 @@ export default function StadiumDetails() {
       <Link to="/" className="text-sm text-emerald-700 hover:underline">← Back to stadiums</Link>
       <div className="mt-3 grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div>
-          {stadium.photos?.length ? (
-            <div className="grid grid-cols-2 gap-2">
-              {stadium.photos.slice(0, 4).map((p, i) => (
-                <img
-                  key={i}
-                  src={photoURL(p)}
-                  alt={`${stadium.name} ${i + 1}`}
-                  className={`rounded-lg object-cover ${i === 0 ? 'col-span-2 aspect-[16/9]' : 'aspect-square'}`}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex aspect-[16/9] items-center justify-center rounded-lg bg-slate-200 text-slate-400">
-              No photos
-            </div>
-          )}
+          <Carousel photos={stadium.photos} alt={stadium.name} />
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h1 className="text-2xl font-semibold text-slate-900">{stadium.name}</h1>

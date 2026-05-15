@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { messages as messagesApi } from '../api/endpoints';
 import useMessagePoll from '../hooks/useMessagePoll';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from './feedback';
 
 export default function ChatBox({ otherUserId, otherUserName, stadiumId, stadiumName }) {
   const { user } = useAuth();
+  const toast = useToast();
   const { messages, setMessages, error } = useMessagePoll(otherUserId, stadiumId);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -23,7 +25,7 @@ export default function ChatBox({ otherUserId, otherUserName, stadiumId, stadium
       setMessages((m) => [...m, msg]);
       setText('');
     } catch (err) {
-      alert(err?.response?.data?.error || 'Failed to send');
+      toast.error(err?.response?.data?.error || 'Failed to send');
     } finally {
       setSending(false);
     }

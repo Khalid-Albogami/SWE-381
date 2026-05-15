@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider, ConfirmProvider } from './components/feedback';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -9,7 +10,7 @@ import Register from './pages/auth/Register';
 
 import OwnerDashboard from './pages/owner/OwnerDashboard';
 import AddStadium from './pages/owner/AddStadium';
-import ManageSlots from './pages/owner/ManageSlots';
+import ManageStadium from './pages/owner/ManageStadium';
 import Statistics from './pages/owner/Statistics';
 import OwnerMessages from './pages/owner/OwnerMessages';
 
@@ -27,6 +28,8 @@ function User({ children }) {
 export default function App() {
   return (
     <AuthProvider>
+      <ToastProvider>
+        <ConfirmProvider>
       <BrowserRouter>
         <Navbar />
         <Routes>
@@ -39,7 +42,7 @@ export default function App() {
 
           <Route path="/owner" element={<Owner><OwnerDashboard /></Owner>} />
           <Route path="/owner/stadiums/new" element={<Owner><AddStadium /></Owner>} />
-          <Route path="/owner/stadiums/:id/slots" element={<Owner><ManageSlots /></Owner>} />
+          <Route path="/owner/stadiums/:id" element={<Owner><ManageStadium /></Owner>} />
           <Route path="/owner/stats" element={<Owner><Statistics /></Owner>} />
           <Route path="/owner/messages" element={<Owner><OwnerMessages /></Owner>} />
 
@@ -49,6 +52,8 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+        </ConfirmProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }

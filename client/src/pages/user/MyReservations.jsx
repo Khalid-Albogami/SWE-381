@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { reservations as reservationsApi } from '../../api/endpoints';
 import { photoURL } from '../../api/axios';
+import { useToast, useConfirm } from '../../components/feedback';
 
 export default function MyReservations() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,13 +22,21 @@ export default function MyReservations() {
 
   useEffect(load, []);
 
-  const cancel = async (slotId) => {
-    if (!confirm('Cancel this reservation?')) return;
+  const cancel = async (slotId, label) => {
+    const ok = await confirm({
+      title: 'Cancel reservation?',
+      message: label,
+      confirmLabel: 'Cancel reservation',
+      cancelLabel: 'Keep it',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await reservationsApi.cancel(slotId);
+      toast.success('Reservation cancelled');
       load();
     } catch (e) {
-      alert(e?.response?.data?.error || 'Could not cancel');
+      toast.error(e?.response?.data?.error || 'Could not cancel');
     }
   };
 
@@ -63,7 +74,7 @@ export default function MyReservations() {
                 </p>
               </div>
               <button
-                onClick={() => cancel(r._id)}
+                onClick={() => cancel(r._id, `${s?.name || 'Stadium'} · ${r.date} at ${r.startTime}`)}
                 className="rounded-md bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100"
               >
                 Cancel

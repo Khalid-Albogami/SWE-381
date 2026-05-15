@@ -20,7 +20,7 @@ export default function AddStadium() {
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
       for (const file of files) fd.append('photos', file);
       const created = await stadiumsApi.create(fd);
-      navigate(`/owner/stadiums/${created._id}/slots`);
+      navigate(`/owner/stadiums/${created._id}`);
     } catch (err) {
       setError(err?.response?.data?.error || 'Failed to create');
     } finally {

@@ -103,6 +103,23 @@ exports.update = async (req, res, next) => {
   }
 };
 
+exports.removePhoto = async (req, res, next) => {
+  try {
+    const stadium = await loadOwned(req, res);
+    if (!stadium) return;
+    const { filename } = req.params;
+    const target = stadium.photos.find((p) => path.basename(p) === filename);
+    if (!target) return res.status(404).json({ error: 'Photo not found' });
+    stadium.photos = stadium.photos.filter((p) => p !== target);
+    await stadium.save();
+    const abs = path.join(__dirname, '..', target);
+    fs.promises.unlink(abs).catch(() => {});
+    res.json(stadium);
+  } catch (e) {
+    next(e);
+  }
+};
+
 exports.remove = async (req, res, next) => {
   try {
     const stadium = await loadOwned(req, res);

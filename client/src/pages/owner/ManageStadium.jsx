@@ -4,14 +4,17 @@ import { slots as slotsApi, stadiums as stadiumsApi } from '../../api/endpoints'
 import { photoURL } from '../../api/axios';
 import SlotGrid from '../../components/SlotGrid';
 import AddressLine from '../../components/AddressLine';
+import { useToast, useConfirm } from '../../components/feedback';
 
 function nextHour(hhmm) {
   const [h] = hhmm.split(':');
   return `${String((Number(h) + 1) % 24).padStart(2, '0')}:00`;
 }
 
-export default function ManageSlots() {
+export default function ManageStadium() {
   const { id } = useParams();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [stadium, setStadium] = useState(null);
   const [dates, setDates] = useState([]);
   const [slots, setSlots] = useState([]);
@@ -39,17 +42,39 @@ export default function ManageSlots() {
       await slotsApi.create({ stadiumId: id, date, startTime, endTime: nextHour(startTime) });
       refresh();
     } catch (e) {
-      alert(e?.response?.data?.error || 'Could not add slot');
+      toast.error(e?.response?.data?.error || 'Could not add slot');
     }
   };
 
   const deleteSlot = async (slot) => {
-    if (!confirm(`Delete slot ${slot.date} ${slot.startTime}?`)) return;
+    const ok = await confirm({
+      title: 'Delete this slot?',
+      message: `${slot.date} at ${slot.startTime}`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await slotsApi.remove(slot._id);
       refresh();
     } catch (e) {
-      alert(e?.response?.data?.error || 'Could not delete');
+      toast.error(e?.response?.data?.error || 'Could not delete');
+    }
+  };
+
+  const deletePhoto = async (filename) => {
+    const ok = await confirm({
+      title: 'Delete this photo?',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const updated = await stadiumsApi.removePhoto(id, filename);
+      setStadium(updated);
+      toast.success('Photo deleted');
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Delete failed');
     }
   };
 
@@ -62,8 +87,9 @@ export default function ManageSlots() {
       for (const f of files) fd.append('photos', f);
       const updated = await stadiumsApi.update(id, fd);
       setStadium(updated);
+      toast.success(`Uploaded ${files.length} photo${files.length === 1 ? '' : 's'}`);
     } catch (err) {
-      alert(err?.response?.data?.error || 'Upload failed');
+      toast.error(err?.response?.data?.error || 'Upload failed');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -108,14 +134,26 @@ export default function ManageSlots() {
           <p className="mt-1 text-xs text-slate-500">Up to 8 per upload, 10 MB each.</p>
           {stadium.photos?.length ? (
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-              {stadium.photos.map((p) => (
-                <img
-                  key={p}
-                  src={photoURL(p)}
-                  alt={stadium.name}
-                  className="aspect-square w-full rounded-md object-cover"
-                />
-              ))}
+              {stadium.photos.map((p) => {
+                const filename = p.split('/').pop();
+                return (
+                  <div key={p} className="group relative">
+                    <img
+                      src={photoURL(p)}
+                      alt={stadium.name}
+                      className="aspect-square w-full rounded-md object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => deletePhoto(filename)}
+                      title="Delete photo"
+                      className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100 hover:bg-rose-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="mt-3 text-sm text-slate-400">No photos yet.</p>

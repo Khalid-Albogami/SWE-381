@@ -16,6 +16,8 @@ export const stadiums = {
   update: (id, formData) =>
     api.put(`/stadiums/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
       .then((r) => r.data),
+  removePhoto: (id, filename) =>
+    api.delete(`/stadiums/${id}/photos/${encodeURIComponent(filename)}`).then((r) => r.data),
   remove: (id) => api.delete(`/stadiums/${id}`).then((r) => r.data),
 };
 

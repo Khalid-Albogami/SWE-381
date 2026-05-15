@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { stadiums as stadiumsApi } from '../../api/endpoints';
 import { photoURL } from '../../api/axios';
+import { useToast, useConfirm } from '../../components/feedback';
 
 export default function OwnerDashboard() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,13 +19,20 @@ export default function OwnerDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const remove = async (id) => {
-    if (!confirm('Delete this stadium and all its slots?')) return;
+  const remove = async (id, name) => {
+    const ok = await confirm({
+      title: 'Delete stadium?',
+      message: `"${name}" and all of its slots will be permanently deleted.`,
+      confirmLabel: 'Delete stadium',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await stadiumsApi.remove(id);
       setItems((s) => s.filter((x) => x._id !== id));
+      toast.success('Stadium deleted');
     } catch (e) {
-      alert(e?.response?.data?.error || 'Delete failed');
+      toast.error(e?.response?.data?.error || 'Delete failed');
     }
   };
 
@@ -61,13 +71,13 @@ export default function OwnerDashboard() {
               <p className="text-sm text-slate-500">{s.location?.city}</p>
               <div className="mt-3 flex gap-2">
                 <Link
-                  to={`/owner/stadiums/${s._id}/slots`}
+                  to={`/owner/stadiums/${s._id}`}
                   className="flex-1 rounded-md bg-emerald-50 px-3 py-1.5 text-center text-sm font-medium text-emerald-700 hover:bg-emerald-100"
                 >
-                  Manage slots
+                  Manage stadium
                 </Link>
                 <button
-                  onClick={() => remove(s._id)}
+                  onClick={() => remove(s._id, s.name)}
                   className="rounded-md bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100"
                 >
                   Delete
