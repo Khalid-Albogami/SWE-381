@@ -10,7 +10,11 @@ export default function StadiumCard({ stadium, to }) {
       <Card.Body>
         <Card.Title className="h6 mb-1">{stadium.name}</Card.Title>
         <div className="text-secondary small mb-2">
-          <AddressLine city={stadium.location?.city} address={stadium.location?.address} />
+          <AddressLine
+            city={stadium.location?.city}
+            address={stadium.location?.address}
+            asLink={false}
+          />
         </div>
         {stadium.description && (
           <Card.Text className="small text-body-secondary" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
