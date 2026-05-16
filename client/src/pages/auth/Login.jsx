@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Card, Form, Button, Alert } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
@@ -27,41 +28,38 @@ export default function Login() {
   };
 
   return (
-    <div className="mx-auto mt-16 max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-semibold text-slate-900">Sign in</h1>
-      <form onSubmit={submit} className="mt-6 space-y-4">
-        <Field label="Email" type="email" value={email} onChange={setEmail} />
-        <Field label="Password" type="password" value={password} onChange={setPassword} />
-        {error && <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full rounded-md bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {busy ? 'Signing in...' : 'Sign in'}
-        </button>
-      </form>
-      <p className="mt-4 text-center text-sm text-slate-500">
-        New here?{' '}
-        <Link to="/register" className="font-medium text-emerald-700 hover:underline">
-          Create an account
-        </Link>
-      </p>
-    </div>
-  );
-}
-
-function Field({ label, type, value, onChange }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
-      <input
-        type={type}
-        required
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none"
-      />
-    </label>
+    <Card className="mx-auto mt-5 shadow-sm" style={{ maxWidth: 420 }}>
+      <Card.Body className="p-4">
+        <Card.Title as="h1" className="h4 mb-3">Sign in</Card.Title>
+        <Form onSubmit={submit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Email</Form.Label>
+            <Form.Control
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Password</Form.Label>
+            <Form.Control
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Form.Group>
+          {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
+          <Button type="submit" variant="success" className="w-100" disabled={busy}>
+            {busy ? 'Signing in...' : 'Sign in'}
+          </Button>
+        </Form>
+        <p className="text-center text-secondary small mt-3 mb-0">
+          New here?{' '}
+          <Link to="/register" className="text-success fw-medium">Create an account</Link>
+        </p>
+      </Card.Body>
+    </Card>
   );
 }

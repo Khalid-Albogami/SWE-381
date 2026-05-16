@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Container, Row, Col, Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
 import { stadiums as stadiumsApi } from '../api/endpoints';
 import StadiumCard from '../components/StadiumCard';
 
@@ -51,71 +52,72 @@ export default function Home() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 p-8 text-white shadow-sm">
-        <h1 className="text-3xl font-bold sm:text-4xl">Find and book a soccer pitch.</h1>
-        <p className="mt-2 max-w-2xl text-emerald-50">
-          Browse stadiums, pick a free time slot from the 7-day grid, and reserve in seconds.
-        </p>
-      </div>
+    <Container className="py-4">
+      <Card body className="text-white shadow-sm border-0" style={{ background: 'linear-gradient(135deg,#198754,#146c43)' }}>
+        <h1 className="h2 fw-bold mb-1">Find and book a soccer pitch.</h1>
+        <p className="mb-0">Browse stadiums, pick a free time slot from the 7-day grid, and reserve in seconds.</p>
+      </Card>
 
-      <form
-        onSubmit={submit}
-        className="mt-6 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[2fr_1fr_1fr_auto_auto]"
-      >
-        <input
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          placeholder="City (e.g., Riyadh)"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-        />
-        <select
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-        >
-          <option value="">Any date</option>
-          {next7DaysOptions().map((d) => (
-            <option key={d} value={d}>{d}</option>
-          ))}
-        </select>
-        <select
-          value={startTime}
-          onChange={(e) => setStartTime(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-        >
-          <option value="">Any time</option>
-          {HOURS.map((h) => (
-            <option key={h} value={h}>{h}</option>
-          ))}
-        </select>
-        <button className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
-          Search
-        </button>
-        {(city || date || startTime) && (
-          <button
-            type="button"
-            onClick={reset}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Reset
-          </button>
-        )}
-      </form>
+      <Form onSubmit={submit} className="mt-4">
+        <Card body className="shadow-sm">
+          <Row className="g-2 align-items-end">
+            <Col md>
+              <Form.Label className="small text-muted mb-1">City</Form.Label>
+              <Form.Control
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g., Riyadh"
+              />
+            </Col>
+            <Col md={2}>
+              <Form.Label className="small text-muted mb-1">Date</Form.Label>
+              <Form.Select value={date} onChange={(e) => setDate(e.target.value)}>
+                <option value="">Any date</option>
+                {next7DaysOptions().map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </Form.Select>
+            </Col>
+            <Col md={2}>
+              <Form.Label className="small text-muted mb-1">Time</Form.Label>
+              <Form.Select value={startTime} onChange={(e) => setStartTime(e.target.value)}>
+                <option value="">Any time</option>
+                {HOURS.map((h) => <option key={h} value={h}>{h}</option>)}
+              </Form.Select>
+            </Col>
+            <Col md="auto">
+              <Button type="submit" variant="success">
+                <i className="bi bi-search me-1" /> Search
+              </Button>
+            </Col>
+            {(city || date || startTime) && (
+              <Col md="auto">
+                <Button type="button" variant="outline-secondary" onClick={reset}>Reset</Button>
+              </Col>
+            )}
+          </Row>
+        </Card>
+      </Form>
 
-      {loading && <p className="mt-8 text-slate-500">Loading...</p>}
-      {error && <p className="mt-8 text-rose-700">{error}</p>}
-      {!loading && !error && items.length === 0 && (
-        <div className="mt-12 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-          No stadiums match your search.
+      {loading && (
+        <div className="text-center py-5 text-secondary">
+          <Spinner animation="border" size="sm" className="me-2" /> Loading...
         </div>
       )}
+      {error && <Alert variant="danger" className="mt-4">{error}</Alert>}
+      {!loading && !error && items.length === 0 && (
+        <Card body className="text-center text-secondary mt-5 border-dashed">
+          No stadiums match your search.
+        </Card>
+      )}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <Row className="mt-4 g-3">
         {items.map((s) => (
-          <StadiumCard key={s._id} stadium={s} to={`/stadiums/${s._id}`} />
+          <Col key={s._id} sm={6} lg={4}>
+            <StadiumCard stadium={s} to={`/stadiums/${s._id}`} />
+          </Col>
         ))}
-      </div>
-    </div>
+      </Row>
+    </Container>
   );
 }

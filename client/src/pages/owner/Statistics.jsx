@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Container, Card, Row, Col, Spinner, Alert, Table } from 'react-bootstrap';
 import { stats as statsApi } from '../../api/endpoints';
 import {
   Chart as ChartJS,
@@ -25,8 +26,12 @@ export default function Statistics() {
       .catch((e) => setError(e?.response?.data?.error || 'Failed to load'));
   }, []);
 
-  if (error) return <div className="mx-auto max-w-4xl px-4 py-8 text-rose-700">{error}</div>;
-  if (!data) return <div className="mx-auto max-w-4xl px-4 py-8 text-slate-500">Loading...</div>;
+  if (error) return <Container className="py-4"><Alert variant="danger">{error}</Alert></Container>;
+  if (!data) return (
+    <Container className="py-5 text-center text-secondary">
+      <Spinner animation="border" size="sm" className="me-2" /> Loading...
+    </Container>
+  );
 
   const barData = {
     labels: data.perDay.map((d) => d.date.slice(5)),
@@ -34,7 +39,7 @@ export default function Statistics() {
       {
         label: 'Reservations',
         data: data.perDay.map((d) => d.count),
-        backgroundColor: 'rgba(16,185,129,0.7)',
+        backgroundColor: 'rgba(25,135,84,0.7)',
         borderRadius: 4,
       },
     ],
@@ -45,79 +50,87 @@ export default function Statistics() {
     datasets: [
       {
         data: [data.statusBreakdown.available, data.statusBreakdown.reserved],
-        backgroundColor: ['rgba(16,185,129,0.7)', 'rgba(244,63,94,0.7)'],
+        backgroundColor: ['rgba(25,135,84,0.7)', 'rgba(220,53,69,0.7)'],
       },
     ],
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="text-2xl font-semibold text-slate-900">Statistics</h1>
+    <Container className="py-4">
+      <h1 className="h3 mb-4">Statistics</h1>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <Stat label="Reservations (all-time)" value={data.totals.allTime} />
-        <Stat label="Reservations (last 7 days)" value={data.totals.last7Days} />
-        <Stat
-          label="Most reserved"
-          value={data.mostReserved ? data.mostReserved.stadiumName : '—'}
-          sub={data.mostReserved ? `${data.mostReserved.reserved} reservations` : ''}
-        />
-      </div>
+      <Row className="g-3 mb-4">
+        <Col md={4}><Stat label="Reservations (all-time)" value={data.totals.allTime} /></Col>
+        <Col md={4}><Stat label="Reservations (last 7 days)" value={data.totals.last7Days} /></Col>
+        <Col md={4}>
+          <Stat
+            label="Most reserved"
+            value={data.mostReserved ? data.mostReserved.stadiumName : '—'}
+            sub={data.mostReserved ? `${data.mostReserved.reserved} reservations` : ''}
+          />
+        </Col>
+      </Row>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <Card title="Reservations per day (last 7)">
-          <Bar data={barData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
-        </Card>
-        <Card title="Slot status">
-          <Pie data={pieData} options={{ responsive: true }} />
-        </Card>
-      </div>
+      <Row className="g-3">
+        <Col lg={6}>
+          <Card className="shadow-sm">
+            <Card.Body>
+              <Card.Title className="h6">Reservations per day (last 7)</Card.Title>
+              <Bar data={barData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col lg={6}>
+          <Card className="shadow-sm">
+            <Card.Body>
+              <Card.Title className="h6">Slot status</Card.Title>
+              <Pie data={pieData} options={{ responsive: true }} />
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
-      <Card title="Occupancy per stadium" className="mt-6">
-        {data.perStadium.length === 0 ? (
-          <p className="text-sm text-slate-500">No stadiums yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500">
-                <th className="py-1">Stadium</th>
-                <th className="py-1">Slots</th>
-                <th className="py-1">Reserved</th>
-                <th className="py-1">Occupancy</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.perStadium.map((p) => (
-                <tr key={p.stadiumId} className="border-t border-slate-100">
-                  <td className="py-1.5">{p.stadiumName}</td>
-                  <td className="py-1.5">{p.total}</td>
-                  <td className="py-1.5">{p.reserved}</td>
-                  <td className="py-1.5">{Math.round(p.occupancyRate * 100)}%</td>
+      <Card className="shadow-sm mt-3">
+        <Card.Body>
+          <Card.Title className="h6">Occupancy per stadium</Card.Title>
+          {data.perStadium.length === 0 ? (
+            <p className="text-secondary small mb-0">No stadiums yet.</p>
+          ) : (
+            <Table size="sm" className="mb-0">
+              <thead className="text-muted">
+                <tr>
+                  <th>Stadium</th>
+                  <th>Slots</th>
+                  <th>Reserved</th>
+                  <th>Occupancy</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {data.perStadium.map((p) => (
+                  <tr key={p.stadiumId}>
+                    <td>{p.stadiumName}</td>
+                    <td>{p.total}</td>
+                    <td>{p.reserved}</td>
+                    <td>{Math.round(p.occupancyRate * 100)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </Card.Body>
       </Card>
-    </div>
+    </Container>
   );
 }
 
 function Stat({ label, value, sub }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-2xl font-semibold text-slate-900">{value}</div>
-      {sub && <div className="text-xs text-slate-500">{sub}</div>}
-    </div>
-  );
-}
-
-function Card({ title, children, className = '' }) {
-  return (
-    <div className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${className}`}>
-      <h3 className="mb-3 text-sm font-medium text-slate-700">{title}</h3>
-      {children}
-    </div>
+    <Card className="shadow-sm h-100">
+      <Card.Body>
+        <div className="text-uppercase text-muted small">{label}</div>
+        <div className="h4 mt-1 mb-0">{value}</div>
+        {sub && <div className="text-secondary small">{sub}</div>}
+      </Card.Body>
+    </Card>
   );
 }

@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Card, Form, Button, Alert, Row, Col } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
+
+const ROLES = [
+  { value: 'user', label: 'Match organizer', sub: 'Find and book pitches' },
+  { value: 'owner', label: 'Stadium owner', sub: 'List pitches and slots' },
+];
 
 export default function Register() {
   const { register } = useAuth();
@@ -9,7 +15,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -26,67 +32,51 @@ export default function Register() {
   };
 
   return (
-    <div className="mx-auto mt-16 max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-semibold text-slate-900">Create account</h1>
+    <Card className="mx-auto mt-5 shadow-sm" style={{ maxWidth: 460 }}>
+      <Card.Body className="p-4">
+        <Card.Title as="h1" className="h4 mb-3">Create account</Card.Title>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        {[
-          { value: 'user', label: 'Match organizer', sub: 'Find and book pitches' },
-          { value: 'owner', label: 'Stadium owner', sub: 'List pitches and slots' },
-        ].map((opt) => {
-          const active = form.role === opt.value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => set('role')(opt.value)}
-              className={`rounded-lg border p-3 text-left text-sm transition ${
-                active
-                  ? 'border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600'
-                  : 'border-slate-300 bg-white hover:border-slate-400'
-              }`}
-            >
-              <div className="font-semibold text-slate-900">{opt.label}</div>
-              <div className="text-xs text-slate-500">{opt.sub}</div>
-            </button>
-          );
-        })}
-      </div>
+        <Row className="g-2 mb-3">
+          {ROLES.map((opt) => {
+            const active = form.role === opt.value;
+            return (
+              <Col key={opt.value} xs={6}>
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, role: opt.value }))}
+                  className={`btn w-100 text-start p-3 ${active ? 'btn-success' : 'btn-outline-secondary'}`}
+                >
+                  <div className="fw-semibold">{opt.label}</div>
+                  <div className="small">{opt.sub}</div>
+                </button>
+              </Col>
+            );
+          })}
+        </Row>
 
-      <form onSubmit={submit} className="mt-4 space-y-4">
-        <Field label="Name" type="text" value={form.name} onChange={set('name')} />
-        <Field label="Email" type="email" value={form.email} onChange={set('email')} />
-        <Field label="Password" type="password" value={form.password} onChange={set('password')} />
-        {error && <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full rounded-md bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {busy ? 'Creating...' : 'Create account'}
-        </button>
-      </form>
-      <p className="mt-4 text-center text-sm text-slate-500">
-        Already have an account?{' '}
-        <Link to="/login" className="font-medium text-emerald-700 hover:underline">
-          Sign in
-        </Link>
-      </p>
-    </div>
-  );
-}
-
-function Field({ label, type, value, onChange }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
-      <input
-        type={type}
-        required
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none"
-      />
-    </label>
+        <Form onSubmit={submit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Name</Form.Label>
+            <Form.Control required value={form.name} onChange={set('name')} />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Email</Form.Label>
+            <Form.Control type="email" required value={form.email} onChange={set('email')} />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Password</Form.Label>
+            <Form.Control type="password" required value={form.password} onChange={set('password')} />
+          </Form.Group>
+          {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
+          <Button type="submit" variant="success" className="w-100" disabled={busy}>
+            {busy ? 'Creating...' : 'Create account'}
+          </Button>
+        </Form>
+        <p className="text-center text-secondary small mt-3 mb-0">
+          Already have an account?{' '}
+          <Link to="/login" className="text-success fw-medium">Sign in</Link>
+        </p>
+      </Card.Body>
+    </Card>
   );
 }

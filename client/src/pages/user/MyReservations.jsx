@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Container, ListGroup, Button, Spinner, Alert, Card } from 'react-bootstrap';
 import { reservations as reservationsApi } from '../../api/endpoints';
 import { photoURL } from '../../api/axios';
 import { useToast, useConfirm } from '../../components/feedback';
@@ -41,48 +42,50 @@ export default function MyReservations() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-2xl font-semibold text-slate-900">My reservations</h1>
-      {loading && <p className="mt-6 text-slate-500">Loading...</p>}
-      {error && <p className="mt-6 text-rose-700">{error}</p>}
-      {!loading && !error && items.length === 0 && (
-        <div className="mt-10 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-          You haven't reserved any slots yet.{' '}
-          <Link to="/" className="text-emerald-700 hover:underline">Browse stadiums</Link>.
-        </div>
+    <Container className="py-4" style={{ maxWidth: 900 }}>
+      <h1 className="h3 mb-3">My reservations</h1>
+      {loading && (
+        <div className="text-secondary"><Spinner animation="border" size="sm" className="me-2" />Loading...</div>
       )}
-      <ul className="mt-6 space-y-3">
+      {error && <Alert variant="danger">{error}</Alert>}
+      {!loading && !error && items.length === 0 && (
+        <Card body className="text-center text-secondary py-5">
+          You haven't reserved any slots yet.{' '}
+          <Link to="/" className="text-success">Browse stadiums</Link>.
+        </Card>
+      )}
+      <ListGroup>
         {items.map((r) => {
           const s = r.stadiumId;
           return (
-            <li
-              key={r._id}
-              className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
-            >
-              <div className="h-16 w-24 shrink-0 overflow-hidden rounded-md bg-slate-200">
-                {s?.photos?.[0] ? (
-                  <img src={photoURL(s.photos[0])} alt={s.name} className="h-full w-full object-cover" />
-                ) : null}
+            <ListGroup.Item key={r._id} className="d-flex align-items-center gap-3">
+              <div style={{ width: 96, height: 64, overflow: 'hidden', borderRadius: 6, background: '#e9ecef', flexShrink: 0 }}>
+                {s?.photos?.[0] && (
+                  <img
+                    src={photoURL(s.photos[0])}
+                    alt={s.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                )}
               </div>
-              <div className="flex-1">
-                <Link to={`/stadiums/${s?._id}`} className="font-semibold text-slate-900 hover:underline">
+              <div className="flex-grow-1">
+                <Link to={`/stadiums/${s?._id}`} className="fw-semibold text-decoration-none text-dark">
                   {s?.name || 'Stadium'}
                 </Link>
-                <p className="text-sm text-slate-500">{s?.location?.city}</p>
-                <p className="mt-1 text-sm text-slate-700">
-                  {r.date} · {r.startTime}–{r.endTime}
-                </p>
+                <div className="text-secondary small">{s?.location?.city}</div>
+                <div className="small mt-1">{r.date} · {r.startTime}–{r.endTime}</div>
               </div>
-              <button
+              <Button
+                variant="outline-danger"
+                size="sm"
                 onClick={() => cancel(r._id, `${s?.name || 'Stadium'} · ${r.date} at ${r.startTime}`)}
-                className="rounded-md bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100"
               >
                 Cancel
-              </button>
-            </li>
+              </Button>
+            </ListGroup.Item>
           );
         })}
-      </ul>
-    </div>
+      </ListGroup>
+    </Container>
   );
 }

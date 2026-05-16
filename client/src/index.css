@@ -1,11 +1,216 @@
-@import "tailwindcss";
+/* Golato base styles on top of Bootstrap */
+
+:root {
+  --brand: #198754;
+  --brand-emphasis: #146c43;
+}
 
 html, body, #root {
   height: 100%;
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   background: #f8fafc;
-  color: #0f172a;
 }
+
+/* Tweak the navbar brand color to match emerald-ish brand */
+.navbar-brand {
+  font-weight: 600;
+}
+
+/* SlotGrid color tokens — set --bs-table-bg so Bootstrap's inset box-shadow paints these colors */
+.slot-available { --bs-table-bg: #d1e7dd; color: #0f5132; }
+.slot-available:hover { --bs-table-bg: #a3cfbb; }
+.slot-reserved { --bs-table-bg: #f8d7da; color: #842029; }
+.slot-mine { --bs-table-bg: #fff3cd; color: #664d03; }
+.slot-cell {
+  height: 2.25rem;
+  font-size: 0.75rem;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+/* Carousel hover overlays */
+.carousel-overlay .ctrl {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.carousel-overlay:hover .ctrl {
+  opacity: 1;
+}
+
+/* Photo thumbnail with delete button */
+.photo-thumb { position: relative; }
+.photo-thumb img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 0.375rem; }
+.photo-thumb .remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border: 0;
+  border-radius: 999px;
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.photo-thumb:hover .remove-btn { opacity: 1; }
+.photo-thumb .remove-btn:hover { background: #dc3545; }
+
+/* Chat bubbles */
+.chat-scroll { overflow-y: auto; }
+.chat-bubble {
+  display: inline-block;
+  max-width: 75%;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  word-wrap: break-word;
+}
+.chat-bubble-mine { background: #198754; color: white; }
+.chat-bubble-theirs { background: #f1f3f5; color: #212529; }
+
+/* Toast stack */
+.toast-stack {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 20rem;
+  max-width: calc(100vw - 2rem);
+}
+
+/* ---------- Booking card (user-facing, glassmorphism on dark) ---------- */
+
+.booking-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 24px;
+  padding: 1.25rem 1.25rem 1rem;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.booking-title { color: white; font-weight: 600; }
+.booking-month { color: rgba(255, 255, 255, 0.6); font-size: 0.875rem; }
+
+.date-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 4px 0;
+  scroll-snap-type: x mandatory;
+}
+.date-strip::-webkit-scrollbar { height: 6px; }
+.date-strip::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }
+
+.day-chip {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  min-width: 4.25rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: white;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.day-chip:hover { background: rgba(255, 255, 255, 0.10); }
+.day-chip-weekday { font-size: 0.75rem; color: rgba(255, 255, 255, 0.7); }
+.day-chip-day { font-size: 1.05rem; font-weight: 600; }
+.day-chip--selected {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.18);
+}
+.day-chip--empty { opacity: 0.55; }
+
+.time-group-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+@media (max-width: 420px) {
+  .time-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.slot-chip {
+  padding: 0.625rem 0.5rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.1;
+}
+.slot-chip-range { font-size: 0.85rem; font-weight: 600; }
+.slot-chip-duration {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.7;
+}
+.slot-chip:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.slot-chip:disabled,
+.slot-chip--disabled {
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.05);
+  cursor: not-allowed;
+}
+.slot-chip--mine {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #f59e0b;
+  color: #fde68a;
+}
+.slot-chip--mine:hover:not(:disabled) { background: rgba(245, 158, 11, 0.28); }
+
+.booking-empty {
+  padding: 2rem 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.booking-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+.booking-legend-item { display: inline-flex; align-items: center; gap: 0.375rem; }
+.legend-dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
+.legend-dot--available { background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255, 255, 255, 0.6); }
+.legend-dot--mine { background: #f59e0b; }
+.legend-dot--taken { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.2); }

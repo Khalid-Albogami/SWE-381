@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Container, Row, Col, ListGroup, Badge, Card, Alert } from 'react-bootstrap';
 import { messages as messagesApi } from '../../api/endpoints';
 import ChatBox from '../../components/ChatBox';
 
@@ -17,46 +18,40 @@ export default function Inbox() {
   useEffect(reload, []);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="text-2xl font-semibold text-slate-900">Messages</h1>
-      {error && <p className="mt-4 text-rose-700">{error}</p>}
-      <div className="mt-6 grid gap-6 lg:grid-cols-[300px_1fr]">
-        <aside className="rounded-xl border border-slate-200 bg-white">
-          {threads.length === 0 ? (
-            <p className="p-4 text-sm text-slate-500">No conversations yet.</p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {threads.map((t) => {
-                const key = `${t.otherUserId}|${t.stadiumId}`;
-                const isActive = active && `${active.otherUserId}|${active.stadiumId}` === key;
-                return (
-                  <li key={key}>
-                    <button
+    <Container className="py-4">
+      <h1 className="h3 mb-3">Messages</h1>
+      {error && <Alert variant="danger">{error}</Alert>}
+      <Row className="g-3">
+        <Col lg={4}>
+          <Card className="shadow-sm">
+            {threads.length === 0 ? (
+              <Card.Body className="text-secondary small">No conversations yet.</Card.Body>
+            ) : (
+              <ListGroup variant="flush">
+                {threads.map((t) => {
+                  const key = `${t.otherUserId}|${t.stadiumId}`;
+                  const isActive = active && `${active.otherUserId}|${active.stadiumId}` === key;
+                  return (
+                    <ListGroup.Item
+                      key={key}
+                      action
+                      active={isActive}
                       onClick={() => { setActive(t); setTimeout(reload, 500); }}
-                      className={`block w-full px-4 py-3 text-left transition ${
-                        isActive ? 'bg-emerald-50' : 'hover:bg-slate-50'
-                      }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-medium text-slate-900">
-                          {t.otherUserName || 'User'}
-                        </span>
-                        {t.unreadCount > 0 && (
-                          <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white">
-                            {t.unreadCount}
-                          </span>
-                        )}
+                      <div className="d-flex justify-content-between gap-2">
+                        <strong className="text-truncate">{t.otherUserName || 'User'}</strong>
+                        {t.unreadCount > 0 && <Badge bg="success" pill>{t.unreadCount}</Badge>}
                       </div>
-                      <p className="truncate text-xs text-slate-500">about {t.stadiumName || 'stadium'}</p>
-                      <p className="mt-1 truncate text-xs text-slate-400">{t.lastMessage?.content}</p>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </aside>
-        <div>
+                      <div className="text-secondary small text-truncate">about {t.stadiumName || 'stadium'}</div>
+                      <div className="text-muted small text-truncate">{t.lastMessage?.content}</div>
+                    </ListGroup.Item>
+                  );
+                })}
+              </ListGroup>
+            )}
+          </Card>
+        </Col>
+        <Col lg={8}>
           {active ? (
             <ChatBox
               otherUserId={active.otherUserId}
@@ -65,12 +60,12 @@ export default function Inbox() {
               stadiumName={active.stadiumName}
             />
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-400">
+            <Card body className="text-center text-secondary py-5 border-dashed">
               Pick a conversation from the left to start chatting.
-            </div>
+            </Card>
           )}
-        </div>
-      </div>
-    </div>
+        </Col>
+      </Row>
+    </Container>
   );
 }

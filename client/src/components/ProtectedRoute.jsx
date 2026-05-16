@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
+import { Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProtectedRoute({ children, role }) {
@@ -6,7 +7,12 @@ export default function ProtectedRoute({ children, role }) {
   const location = useLocation();
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500">Loading...</div>;
+    return (
+      <div className="d-flex justify-content-center py-5 text-secondary">
+        <Spinner animation="border" size="sm" className="me-2" />
+        Loading...
+      </div>
+    );
   }
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;

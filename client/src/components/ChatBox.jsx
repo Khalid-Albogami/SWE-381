@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Card, Form, Button } from 'react-bootstrap';
 import { messages as messagesApi } from '../api/endpoints';
 import useMessagePoll from '../hooks/useMessagePoll';
 import { useAuth } from '../context/AuthContext';
@@ -32,50 +33,42 @@ export default function ChatBox({ otherUserId, otherUserName, stadiumId, stadium
   };
 
   return (
-    <div className="flex h-[28rem] flex-col rounded-xl border border-slate-200 bg-white">
-      <div className="border-b border-slate-200 px-4 py-2 text-sm">
-        <span className="font-semibold text-slate-900">{otherUserName || 'Conversation'}</span>
-        {stadiumName && <span className="text-slate-500"> · about {stadiumName}</span>}
-      </div>
-      <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
-        {error && <p className="text-xs text-rose-600">{error}</p>}
+    <Card className="d-flex flex-column" style={{ height: '28rem' }}>
+      <Card.Header className="py-2 small">
+        <strong>{otherUserName || 'Conversation'}</strong>
+        {stadiumName && <span className="text-secondary"> · about {stadiumName}</span>}
+      </Card.Header>
+      <Card.Body className="chat-scroll d-flex flex-column gap-2 px-3 py-2">
+        {error && <p className="text-danger small mb-0">{error}</p>}
         {messages.length === 0 && !error && (
-          <p className="text-center text-sm text-slate-400">No messages yet — say hi.</p>
+          <p className="text-center text-secondary small mt-3">No messages yet — say hi.</p>
         )}
         {messages.map((m) => {
           const mine = m.senderId === user.id;
           return (
-            <div key={m._id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
-                  mine ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-900'
-                }`}
-              >
-                <p className="whitespace-pre-wrap">{m.content}</p>
-                <p className={`mt-1 text-[10px] ${mine ? 'text-emerald-100' : 'text-slate-400'}`}>
+            <div key={m._id} className={`d-flex ${mine ? 'justify-content-end' : 'justify-content-start'}`}>
+              <div className={`chat-bubble ${mine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}`}>
+                <div style={{ whiteSpace: 'pre-wrap' }}>{m.content}</div>
+                <div className="small mt-1" style={{ opacity: 0.7, fontSize: 10 }}>
                   {new Date(m.createdAt).toLocaleString()}
-                </p>
+                </div>
               </div>
             </div>
           );
         })}
         <div ref={bottomRef} />
-      </div>
-      <form onSubmit={send} className="flex gap-2 border-t border-slate-200 p-3">
-        <input
+      </Card.Body>
+      <Form onSubmit={send} className="d-flex gap-2 border-top p-2">
+        <Form.Control
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type a message..."
-          className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+          size="sm"
         />
-        <button
-          type="submit"
-          disabled={!text.trim() || sending}
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
+        <Button type="submit" variant="success" size="sm" disabled={!text.trim() || sending}>
           Send
-        </button>
-      </form>
-    </div>
+        </Button>
+      </Form>
+    </Card>
   );
 }

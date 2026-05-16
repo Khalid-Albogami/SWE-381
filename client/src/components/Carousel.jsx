@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
 import { photoURL } from '../api/axios';
 
-export default function Carousel({ photos = [], alt = '', aspectClass = 'aspect-[16/9]', rounded = 'rounded-lg' }) {
+const ASPECT = {
+  '16x9': { paddingTop: '56.25%' },
+  '1x1': { paddingTop: '100%' },
+};
+
+export default function Carousel({
+  photos = [],
+  alt = '',
+  aspect = '16x9',
+  rounded = 'rounded',
+}) {
   const [idx, setIdx] = useState(0);
   const count = photos.length;
 
@@ -9,10 +19,18 @@ export default function Carousel({ photos = [], alt = '', aspectClass = 'aspect-
     if (idx >= count) setIdx(0);
   }, [count, idx]);
 
+  const wrapStyle = {
+    position: 'relative',
+    width: '100%',
+    background: '#e9ecef',
+    overflow: 'hidden',
+    ...ASPECT[aspect],
+  };
+
   if (count === 0) {
     return (
-      <div className={`${aspectClass} ${rounded} flex w-full items-center justify-center bg-slate-200 text-slate-400`}>
-        No photo
+      <div className={`${rounded} d-flex align-items-center justify-content-center text-secondary`} style={wrapStyle}>
+        <span style={{ position: 'absolute' }}>No photo</span>
       </div>
     );
   }
@@ -21,47 +39,51 @@ export default function Carousel({ photos = [], alt = '', aspectClass = 'aspect-
   const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
 
   return (
-    <div className={`group relative ${aspectClass} ${rounded} w-full overflow-hidden bg-slate-200`}>
+    <div className={`${rounded} carousel-overlay`} style={wrapStyle}>
       <img
         src={photoURL(photos[idx])}
         alt={alt}
-        className="h-full w-full object-cover transition-opacity duration-200"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
       />
-
       {count > 1 && (
         <>
           <button
             type="button"
             onClick={(e) => { stop(e); go(-1); }}
-            aria-label="Previous photo"
-            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 px-2 py-1 text-white opacity-0 transition hover:bg-black/70 group-hover:opacity-100"
+            aria-label="Previous"
+            className="ctrl btn btn-dark btn-sm position-absolute top-50 translate-middle-y rounded-circle"
+            style={{ left: 8, opacity: 0 }}
           >
-            ‹
+            <i className="bi bi-chevron-left" />
           </button>
           <button
             type="button"
             onClick={(e) => { stop(e); go(1); }}
-            aria-label="Next photo"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 px-2 py-1 text-white opacity-0 transition hover:bg-black/70 group-hover:opacity-100"
+            aria-label="Next"
+            className="ctrl btn btn-dark btn-sm position-absolute top-50 translate-middle-y rounded-circle"
+            style={{ right: 8, opacity: 0 }}
           >
-            ›
+            <i className="bi bi-chevron-right" />
           </button>
-          <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
+          <div className="position-absolute start-50 translate-middle-x d-flex gap-1" style={{ bottom: 8 }}>
             {photos.map((_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={(e) => { stop(e); setIdx(i); }}
                 aria-label={`Photo ${i + 1}`}
-                className={`h-1.5 w-1.5 rounded-full transition ${
-                  i === idx ? 'bg-white' : 'bg-white/50 hover:bg-white/75'
-                }`}
+                className="border-0 p-0 rounded-circle"
+                style={{
+                  width: 8,
+                  height: 8,
+                  background: i === idx ? 'white' : 'rgba(255,255,255,0.5)',
+                }}
               />
             ))}
           </div>
-          <div className="absolute right-2 top-2 rounded bg-black/50 px-1.5 py-0.5 text-xs text-white">
+          <span className="position-absolute badge bg-dark bg-opacity-50" style={{ top: 8, right: 8 }}>
             {idx + 1}/{count}
-          </div>
+          </span>
         </>
       )}
     </div>

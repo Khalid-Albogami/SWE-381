@@ -6,11 +6,18 @@ import {
   useRef,
   useState,
 } from 'react';
+import { Modal, Button, Toast, ToastContainer } from 'react-bootstrap';
 
 let nextId = 1;
 
 const ToastCtx = createContext(null);
 const ConfirmCtx = createContext(null);
+
+const KIND_BG = {
+  success: 'success',
+  error: 'danger',
+  info: 'light',
+};
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
@@ -38,31 +45,28 @@ export function ToastProvider({ children }) {
   return (
     <ToastCtx.Provider value={api}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-4 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2">
+      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 2000 }}>
         {toasts.map((t) => (
-          <div
+          <Toast
             key={t.id}
-            className={`pointer-events-auto rounded-lg border px-4 py-3 text-sm shadow-md ${
-              t.kind === 'success'
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                : t.kind === 'error'
-                ? 'border-rose-300 bg-rose-50 text-rose-900'
-                : 'border-slate-300 bg-white text-slate-900'
-            }`}
+            bg={KIND_BG[t.kind] || 'light'}
+            onClose={() => remove(t.id)}
+            show
           >
-            <div className="flex items-start justify-between gap-3">
-              <span>{t.message}</span>
-              <button
-                onClick={() => remove(t.id)}
-                className="-mr-1 -mt-1 text-slate-400 hover:text-slate-700"
-                aria-label="Dismiss"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
+            <Toast.Body className={t.kind === 'info' ? '' : 'text-white'}>
+              <div className="d-flex justify-content-between gap-3">
+                <span>{t.message}</span>
+                <button
+                  type="button"
+                  onClick={() => remove(t.id)}
+                  className={`btn-close ${t.kind === 'info' ? '' : 'btn-close-white'}`}
+                  aria-label="Close"
+                />
+              </div>
+            </Toast.Body>
+          </Toast>
         ))}
-      </div>
+      </ToastContainer>
     </ToastCtx.Provider>
   );
 }
@@ -94,7 +98,6 @@ export function ConfirmProvider({ children }) {
   useEffect(() => {
     if (!config) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') settle(false);
       if (e.key === 'Enter') settle(true);
     };
     window.addEventListener('keydown', onKey);
@@ -104,47 +107,24 @@ export function ConfirmProvider({ children }) {
   return (
     <ConfirmCtx.Provider value={confirm}>
       {children}
-      {config && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => settle(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
+      <Modal show={!!config} onHide={() => settle(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>{config?.title || 'Are you sure?'}</Modal.Title>
+        </Modal.Header>
+        {config?.message && <Modal.Body>{config.message}</Modal.Body>}
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => settle(false)}>
+            {config?.cancelLabel || 'Cancel'}
+          </Button>
+          <Button
+            variant={config?.danger ? 'danger' : 'success'}
+            onClick={() => settle(true)}
+            autoFocus
           >
-            <h3 className="text-lg font-semibold text-slate-900">
-              {config.title || 'Are you sure?'}
-            </h3>
-            {config.message && (
-              <p className="mt-2 text-sm text-slate-600">{config.message}</p>
-            )}
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => settle(false)}
-                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                {config.cancelLabel || 'Cancel'}
-              </button>
-              <button
-                type="button"
-                autoFocus
-                onClick={() => settle(true)}
-                className={`rounded-md px-4 py-2 text-sm font-medium text-white ${
-                  config.danger
-                    ? 'bg-rose-600 hover:bg-rose-700'
-                    : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
-              >
-                {config.confirmLabel || 'Confirm'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            {config?.confirmLabel || 'Confirm'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </ConfirmCtx.Provider>
   );
 }

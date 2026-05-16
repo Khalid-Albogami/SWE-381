@@ -46,6 +46,15 @@ async function ensureOwner(req, res, stadiumId) {
   return stadium;
 }
 
+async function overlaps(stadiumId, date, startTime, endTime) {
+  return Slot.findOne({
+    stadiumId,
+    date,
+    startTime: { $lt: endTime },
+    endTime: { $gt: startTime },
+  });
+}
+
 exports.create = async (req, res, next) => {
   try {
     const { stadiumId, date, startTime, endTime } = req.body;
@@ -53,6 +62,12 @@ exports.create = async (req, res, next) => {
     if (!stadium) return;
     const err = validateSlot({ date, startTime, endTime });
     if (err) return res.status(400).json({ error: err });
+    const conflict = await overlaps(stadiumId, date, startTime, endTime);
+    if (conflict) {
+      return res.status(409).json({
+        error: `Overlaps existing slot ${conflict.startTime}–${conflict.endTime}`,
+      });
+    }
     try {
       const slot = await Slot.create({ stadiumId, date, startTime, endTime });
       res.status(201).json(slot);
@@ -82,6 +97,11 @@ exports.createBulk = async (req, res, next) => {
     const conflicts = [];
     for (const doc of docs) {
       try {
+        const conflict = await overlaps(doc.stadiumId, doc.date, doc.startTime, doc.endTime);
+        if (conflict) {
+          conflicts.push(doc);
+          continue;
+        }
         const c = await Slot.create(doc);
         created.push(c);
       } catch (e) {

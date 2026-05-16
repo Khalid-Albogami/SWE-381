@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Container, Row, Col, Card, Button, Alert, Spinner } from 'react-bootstrap';
 import { stadiums as stadiumsApi } from '../../api/endpoints';
 import { photoURL } from '../../api/axios';
 import { useToast, useConfirm } from '../../components/feedback';
@@ -37,56 +38,69 @@ export default function OwnerDashboard() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">My stadiums</h1>
-        <Link
-          to="/owner/stadiums/new"
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-        >
-          + Add stadium
-        </Link>
+    <Container className="py-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1 className="h3 mb-0">My stadiums</h1>
+        <Button as={Link} to="/owner/stadiums/new" variant="success">
+          <i className="bi bi-plus-lg me-1" /> Add stadium
+        </Button>
       </div>
 
-      {loading && <p className="mt-8 text-slate-500">Loading...</p>}
-      {error && <p className="mt-8 text-rose-700">{error}</p>}
-      {!loading && !error && items.length === 0 && (
-        <div className="mt-12 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-          You haven't added any stadiums yet.
+      {loading && (
+        <div className="text-center py-5 text-secondary">
+          <Spinner animation="border" size="sm" className="me-2" /> Loading...
         </div>
       )}
+      {error && <Alert variant="danger">{error}</Alert>}
+      {!loading && !error && items.length === 0 && (
+        <Card body className="text-center text-secondary py-5">
+          You haven't added any stadiums yet.
+        </Card>
+      )}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <Row className="g-3">
         {items.map((s) => (
-          <div key={s._id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="aspect-[16/9] bg-slate-200">
-              {s.photos?.[0] ? (
-                <img src={photoURL(s.photos[0])} alt={s.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-slate-400">No photo</div>
-              )}
-            </div>
-            <div className="p-4">
-              <h3 className="font-semibold text-slate-900">{s.name}</h3>
-              <p className="text-sm text-slate-500">{s.location?.city}</p>
-              <div className="mt-3 flex gap-2">
-                <Link
-                  to={`/owner/stadiums/${s._id}`}
-                  className="flex-1 rounded-md bg-emerald-50 px-3 py-1.5 text-center text-sm font-medium text-emerald-700 hover:bg-emerald-100"
-                >
-                  Manage stadium
-                </Link>
-                <button
-                  onClick={() => remove(s._id, s.name)}
-                  className="rounded-md bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100"
-                >
-                  Delete
-                </button>
+          <Col key={s._id} sm={6} lg={4}>
+            <Card className="h-100 shadow-sm">
+              <div style={{ aspectRatio: '16/9', background: '#e9ecef', overflow: 'hidden' }}>
+                {s.photos?.[0] ? (
+                  <img
+                    src={photoURL(s.photos[0])}
+                    alt={s.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div className="d-flex h-100 align-items-center justify-content-center text-secondary">
+                    No photo
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
+              <Card.Body>
+                <Card.Title className="h6">{s.name}</Card.Title>
+                <div className="text-secondary small mb-3">{s.location?.city}</div>
+                <div className="d-flex gap-2">
+                  <Button
+                    as={Link}
+                    to={`/owner/stadiums/${s._id}`}
+                    variant="success"
+                    size="sm"
+                    className="flex-grow-1"
+                  >
+                    Manage stadium
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => remove(s._id, s.name)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
         ))}
-      </div>
-    </div>
+      </Row>
+    </Container>
   );
 }

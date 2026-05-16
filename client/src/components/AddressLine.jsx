@@ -17,9 +17,10 @@ export default function AddressLine({ city, address, className = '' }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="font-medium text-emerald-700 hover:underline"
+              className="text-success text-decoration-none fw-medium"
             >
-              📍 Open in maps
+              <i className="bi bi-geo-alt-fill me-1" />
+              Open in maps
             </a>
           ) : (
             address
