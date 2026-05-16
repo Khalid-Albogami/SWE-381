@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "migrate:slots-2h": "node scripts/migrate-slots-2h.js"
+    "migrate:slots-2h": "node scripts/migrate-slots-2h.js",
+    "migrate:wipe-slots": "node scripts/wipe-slots.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

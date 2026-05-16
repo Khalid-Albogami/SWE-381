@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { formatSAR } from '../utils/currency';
 
 function dateParts(d) {
   const date = new Date(`${d}T00:00:00`);
@@ -134,12 +135,7 @@ export default function BookingPanel({
                 {grouped[b.key].map((s) => {
                   const mine = currentUserId && s.reservedBy === currentUserId;
                   const isAvailable = s.status === 'available';
-                  const clickable = interactive && (isAvailable || mine);
-                  const cls = mine
-                    ? 'slot-chip slot-chip--mine'
-                    : isAvailable
-                    ? 'slot-chip'
-                    : 'slot-chip slot-chip--disabled';
+                  const clickable = interactive && isAvailable;
                   const dur = durationHours(s.startTime, s.endTime);
                   return (
                     <button
@@ -147,13 +143,13 @@ export default function BookingPanel({
                       type="button"
                       disabled={!clickable}
                       onClick={() => onSlotClick?.(s)}
-                      className={cls}
-                      title={`${s.startTime}–${s.endTime} · ${dur}h${
+                      className={`slot-chip ${!isAvailable ? 'slot-chip--booked' : ''}`}
+                      title={`${s.startTime}–${s.endTime} · ${dur}h · ${formatSAR(s.price)}${
                         mine ? ' · your booking' : isAvailable ? '' : ' · taken'
                       }`}
                     >
                       <div className="slot-chip-range">{fmtRange(s.startTime, s.endTime)}</div>
-                      <div className="slot-chip-duration">{dur}h</div>
+                      <div className="slot-chip-price">{formatSAR(s.price)}</div>
                     </button>
                   );
                 })}
@@ -163,17 +159,6 @@ export default function BookingPanel({
         )
       )}
 
-      <div className="booking-legend">
-        <span className="booking-legend-item">
-          <span className="legend-dot legend-dot--available" /> Available
-        </span>
-        <span className="booking-legend-item">
-          <span className="legend-dot legend-dot--mine" /> Yours
-        </span>
-        <span className="booking-legend-item">
-          <span className="legend-dot legend-dot--taken" /> Taken
-        </span>
-      </div>
     </div>
   );
 }

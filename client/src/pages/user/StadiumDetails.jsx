@@ -1,17 +1,18 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Alert, Button, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Card, Alert, Button, Spinner, Nav, Badge } from 'react-bootstrap';
 import {
   stadiums as stadiumsApi,
   slots as slotsApi,
-  reservations as reservationsApi,
+  pitches as pitchesApi,
 } from '../../api/endpoints';
 import BookingPanel from '../../components/BookingPanel';
 import ChatBox from '../../components/ChatBox';
 import AddressLine from '../../components/AddressLine';
 import Carousel from '../../components/Carousel';
 import { useAuth } from '../../context/AuthContext';
-import { useToast, useConfirm } from '../../components/feedback';
+import { useToast } from '../../components/feedback';
+import { formatSAR } from '../../utils/currency';
 
 export default function StadiumDetails() {
   const { id } = useParams();
@@ -19,14 +20,15 @@ export default function StadiumDetails() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
-  const confirm = useConfirm();
   const [stadium, setStadium] = useState(null);
+  const [pitches, setPitches] = useState([]);
+  const [selectedPitchId, setSelectedPitchId] = useState(null);
   const [dates, setDates] = useState([]);
   const [slots, setSlots] = useState([]);
   const [error, setError] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
 
-  const refresh = useCallback(async () => {
+  const refreshSlots = useCallback(async () => {
     try {
       const data = await slotsApi.forStadium(id);
       setDates(data.dates);
@@ -38,35 +40,37 @@ export default function StadiumDetails() {
 
   useEffect(() => {
     stadiumsApi.get(id).then(setStadium).catch((e) => setError(e?.response?.data?.error || 'Not found'));
-    refresh();
-  }, [id, refresh]);
+    pitchesApi
+      .list(id)
+      .then((data) => {
+        setPitches(data);
+        if (data.length > 0) setSelectedPitchId(data[0]._id);
+      })
+      .catch(() => {});
+    refreshSlots();
+  }, [id, refreshSlots]);
 
-  const handleSlotClick = async (slot) => {
-    if (!user || user.role !== 'user') {
-      toast.error('Sign in as a match organizer to reserve.');
-      return;
-    }
-    const mine = slot.reservedBy === user.id;
-    if (mine) {
-      const ok = await confirm({
-        title: 'Cancel reservation?',
-        message: `Your booking for ${slot.date} at ${slot.startTime} will be released.`,
-        confirmLabel: 'Cancel reservation',
-        cancelLabel: 'Keep it',
-        danger: true,
-      });
-      if (!ok) return;
-      try {
-        await reservationsApi.cancel(slot._id);
-        toast.success('Reservation cancelled');
-        refresh();
-      } catch (e) {
-        toast.error(e?.response?.data?.error || 'Could not cancel');
-      }
-      return;
-    }
+  const visibleSlots = useMemo(
+    () => slots.filter((s) => s.pitchId === selectedPitchId),
+    [slots, selectedPitchId]
+  );
+  const selectedPitch = useMemo(
+    () => pitches.find((p) => p._id === selectedPitchId) || null,
+    [pitches, selectedPitchId]
+  );
+
+  const handleSlotClick = (slot) => {
     if (slot.status !== 'available') return;
-    navigate(`/stadiums/${id}/reserve/${slot._id}`);
+    const reserveUrl = `/stadiums/${id}/reserve/${slot._id}`;
+    if (!user) {
+      navigate('/login', { state: { from: { pathname: reserveUrl } } });
+      return;
+    }
+    if (user.role !== 'user') {
+      toast.error('Only match organizers can reserve.');
+      return;
+    }
+    navigate(reserveUrl);
   };
 
   if (error) return <Container className="py-4"><Alert variant="danger">{error}</Alert></Container>;
@@ -129,19 +133,54 @@ export default function StadiumDetails() {
 
       <div className="mt-4">
         <SignInBanner user={user} pathname={location.pathname} />
-        {user?.role === 'user' && (
-          <p className="text-secondary small mb-3">
-            Tap a time to reserve. Amber slots are yours — tap to cancel.
-          </p>
-        )}
-        {dates.length > 0 && (
-          <BookingPanel
-            dates={dates}
-            slots={slots}
-            currentUserId={user?.id}
-            onSlotClick={handleSlotClick}
-            interactive={user?.role === 'user'}
-          />
+
+        {pitches.length === 0 ? (
+          <Alert variant="info" className="mb-0">
+            This stadium has no pitches set up yet — check back soon.
+          </Alert>
+        ) : (
+          <>
+            <h2 className="h5 mb-2">Pitches</h2>
+            <Nav variant="pills" activeKey={selectedPitchId || ''} className="mb-3 flex-wrap">
+              {pitches.map((p) => (
+                <Nav.Item key={p._id}>
+                  <Nav.Link
+                    eventKey={p._id}
+                    onClick={() => setSelectedPitchId(p._id)}
+                    className="px-3 py-1"
+                  >
+                    {p.name}
+                    <Badge bg="light" text="dark" className="ms-2 fw-normal">
+                      {formatSAR(p.pricePerHour)} / hr
+                    </Badge>
+                  </Nav.Link>
+                </Nav.Item>
+              ))}
+            </Nav>
+            {selectedPitch?.description && (
+              <p className="text-secondary small mb-3">{selectedPitch.description}</p>
+            )}
+            {user?.role === 'user' && (
+              <p className="text-secondary small mb-3">
+                Tap an available time to reserve. Manage your bookings from{' '}
+                <Link to="/reservations" className="text-success">My reservations</Link>.
+              </p>
+            )}
+            {!user && (
+              <p className="text-secondary small mb-3">
+                Tap an available time — we'll guide you through signing in to confirm.
+              </p>
+            )}
+            {dates.length > 0 && (
+              <BookingPanel
+                dates={dates}
+                slots={visibleSlots}
+                currentUserId={user?.id}
+                onSlotClick={handleSlotClick}
+                interactive={!user || user.role === 'user'}
+              />
+            )}
+          </>
         )}
       </div>
     </Container>

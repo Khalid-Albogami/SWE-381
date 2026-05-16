@@ -14,6 +14,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/stadiums', require('./routes/stadium.routes'));
+app.use('/api/pitches', require('./routes/pitch.routes'));
 app.use('/api/slots', require('./routes/slot.routes'));
 app.use('/api/reservations', require('./routes/reservation.routes'));
 app.use('/api/messages', require('./routes/message.routes'));

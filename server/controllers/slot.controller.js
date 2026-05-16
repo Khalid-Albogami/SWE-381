@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Slot = require('../models/Slot');
 const Stadium = require('../models/Stadium');
+const Pitch = require('../models/Pitch');
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -21,6 +22,14 @@ function isWithinNext7Days(dateStr) {
   return d >= t && d <= maxDate;
 }
 
+function durationHours(start, end) {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let mins = eh * 60 + em - (sh * 60 + sm);
+  if (mins < 0) mins += 24 * 60;
+  return mins / 60;
+}
+
 function validateSlot({ date, startTime, endTime }) {
   if (!date || !startTime || !endTime) return 'date, startTime, endTime required';
   if (!isWithinNext7Days(date)) return 'date must be within the next 7 days';
@@ -29,12 +38,17 @@ function validateSlot({ date, startTime, endTime }) {
   return null;
 }
 
-async function ensureOwner(req, res, stadiumId) {
-  if (!mongoose.isValidObjectId(stadiumId)) {
-    res.status(400).json({ error: 'Invalid stadiumId' });
+async function loadPitchOwned(req, res, pitchId) {
+  if (!mongoose.isValidObjectId(pitchId)) {
+    res.status(400).json({ error: 'Invalid pitchId' });
     return null;
   }
-  const stadium = await Stadium.findById(stadiumId);
+  const pitch = await Pitch.findById(pitchId);
+  if (!pitch) {
+    res.status(404).json({ error: 'Pitch not found' });
+    return null;
+  }
+  const stadium = await Stadium.findById(pitch.stadiumId);
   if (!stadium) {
     res.status(404).json({ error: 'Stadium not found' });
     return null;
@@ -43,12 +57,12 @@ async function ensureOwner(req, res, stadiumId) {
     res.status(403).json({ error: 'Forbidden' });
     return null;
   }
-  return stadium;
+  return { pitch, stadium };
 }
 
-async function overlaps(stadiumId, date, startTime, endTime) {
+async function overlaps(pitchId, date, startTime, endTime) {
   return Slot.findOne({
-    stadiumId,
+    pitchId,
     date,
     startTime: { $lt: endTime },
     endTime: { $gt: startTime },
@@ -57,19 +71,36 @@ async function overlaps(stadiumId, date, startTime, endTime) {
 
 exports.create = async (req, res, next) => {
   try {
-    const { stadiumId, date, startTime, endTime } = req.body;
-    const stadium = await ensureOwner(req, res, stadiumId);
-    if (!stadium) return;
+    const { pitchId, date, startTime, endTime, price } = req.body;
+    const owned = await loadPitchOwned(req, res, pitchId);
+    if (!owned) return;
+    const { pitch, stadium } = owned;
     const err = validateSlot({ date, startTime, endTime });
     if (err) return res.status(400).json({ error: err });
-    const conflict = await overlaps(stadiumId, date, startTime, endTime);
+    const conflict = await overlaps(pitchId, date, startTime, endTime);
     if (conflict) {
-      return res.status(409).json({
-        error: `Overlaps existing slot ${conflict.startTime}–${conflict.endTime}`,
-      });
+      return res
+        .status(409)
+        .json({ error: `Overlaps existing slot ${conflict.startTime}–${conflict.endTime}` });
+    }
+    let finalPrice;
+    if (price !== undefined && price !== null) {
+      if (typeof price !== 'number' || price < 0) {
+        return res.status(400).json({ error: 'price must be a non-negative number' });
+      }
+      finalPrice = price;
+    } else {
+      finalPrice = Math.round(pitch.pricePerHour * durationHours(startTime, endTime));
     }
     try {
-      const slot = await Slot.create({ stadiumId, date, startTime, endTime });
+      const slot = await Slot.create({
+        stadiumId: stadium._id,
+        pitchId,
+        date,
+        startTime,
+        endTime,
+        price: finalPrice,
+      });
       res.status(201).json(slot);
     } catch (e) {
       if (e.code === 11000) return res.status(409).json({ error: 'Slot already exists' });
@@ -80,36 +111,27 @@ exports.create = async (req, res, next) => {
   }
 };
 
-exports.createBulk = async (req, res, next) => {
+exports.update = async (req, res, next) => {
   try {
-    const { stadiumId, slots } = req.body;
-    if (!Array.isArray(slots) || !slots.length) {
-      return res.status(400).json({ error: 'slots[] required' });
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ error: 'Not found' });
+    const slot = await Slot.findById(req.params.id);
+    if (!slot) return res.status(404).json({ error: 'Not found' });
+    const stadium = await Stadium.findById(slot.stadiumId);
+    if (!stadium || stadium.ownerId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Forbidden' });
     }
-    const stadium = await ensureOwner(req, res, stadiumId);
-    if (!stadium) return;
-    for (const s of slots) {
-      const err = validateSlot(s);
-      if (err) return res.status(400).json({ error: err });
+    if (slot.status === 'reserved') {
+      return res.status(409).json({ error: 'Cannot edit a reserved slot' });
     }
-    const docs = slots.map((s) => ({ ...s, stadiumId }));
-    const created = [];
-    const conflicts = [];
-    for (const doc of docs) {
-      try {
-        const conflict = await overlaps(doc.stadiumId, doc.date, doc.startTime, doc.endTime);
-        if (conflict) {
-          conflicts.push(doc);
-          continue;
-        }
-        const c = await Slot.create(doc);
-        created.push(c);
-      } catch (e) {
-        if (e.code === 11000) conflicts.push(doc);
-        else throw e;
+    const { price } = req.body;
+    if (price !== undefined) {
+      if (typeof price !== 'number' || price < 0) {
+        return res.status(400).json({ error: 'price must be a non-negative number' });
       }
+      slot.price = price;
     }
-    res.status(201).json({ created, conflicts });
+    await slot.save();
+    res.json(slot);
   } catch (e) {
     next(e);
   }

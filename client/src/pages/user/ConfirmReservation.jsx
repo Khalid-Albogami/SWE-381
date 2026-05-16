@@ -4,11 +4,13 @@ import { Container, Card, Row, Col, Button, Alert, Spinner } from 'react-bootstr
 import {
   stadiums as stadiumsApi,
   slots as slotsApi,
+  pitches as pitchesApi,
   reservations as reservationsApi,
 } from '../../api/endpoints';
 import { photoURL } from '../../api/axios';
 import AddressLine from '../../components/AddressLine';
 import { useToast } from '../../components/feedback';
+import { formatSAR } from '../../utils/currency';
 
 function fmtRange(start, end) {
   const to12 = (t) => {
@@ -47,6 +49,7 @@ export default function ConfirmReservation() {
   const navigate = useNavigate();
   const toast = useToast();
   const [stadium, setStadium] = useState(null);
+  const [pitches, setPitches] = useState([]);
   const [slot, setSlot] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -56,12 +59,14 @@ export default function ConfirmReservation() {
     let cancelled = false;
     (async () => {
       try {
-        const [s, slotsRes] = await Promise.all([
+        const [s, slotsRes, p] = await Promise.all([
           stadiumsApi.get(stadiumId),
           slotsApi.forStadium(stadiumId),
+          pitchesApi.list(stadiumId),
         ]);
         if (cancelled) return;
         setStadium(s);
+        setPitches(p);
         const target = slotsRes.slots.find((x) => x._id === slotId);
         if (!target) setError('This slot no longer exists.');
         else if (target.status !== 'available') setError('This slot is no longer available.');
@@ -72,6 +77,8 @@ export default function ConfirmReservation() {
     })();
     return () => { cancelled = true; };
   }, [stadiumId, slotId]);
+
+  const pitch = slot ? pitches.find((p) => p._id === slot.pitchId) : null;
 
   const confirm = async () => {
     setBusy(true);
@@ -116,8 +123,12 @@ export default function ConfirmReservation() {
             <p className="text-secondary mb-1">
               See you at <strong>{stadium.name}</strong>
             </p>
-            <p className="text-secondary mb-4">
+            <p className="text-secondary mb-1">
               {fullDate(slot.date)} · {fmtRange(slot.startTime, slot.endTime)}
+            </p>
+            <p className="mb-4">
+              {pitch && <span className="text-secondary me-2">{pitch.name}</span>}
+              <strong className="text-success">{formatSAR(slot.price)}</strong>
             </p>
             <div className="d-flex gap-2 justify-content-center">
               <Button as={Link} to="/reservations" variant="success">
@@ -174,12 +185,18 @@ export default function ConfirmReservation() {
           <hr className="my-4" />
 
           <Row className="g-3">
+            {pitch && <Detail icon="bi-grid-3x3" label="Pitch" value={pitch.name} />}
             <Detail icon="bi-calendar3" label="Date" value={fullDate(slot.date)} />
             <Detail icon="bi-clock" label="Time" value={fmtRange(slot.startTime, slot.endTime)} />
             <Detail
               icon="bi-hourglass-split"
               label="Duration"
               value={`${durationHours(slot.startTime, slot.endTime)} hours`}
+            />
+            <Detail
+              icon="bi-cash-coin"
+              label="Price"
+              value={<strong className="text-success">{formatSAR(slot.price)}</strong>}
             />
             {stadium.ownerId?.name && (
               <Detail icon="bi-person" label="Host" value={stadium.ownerId.name} />

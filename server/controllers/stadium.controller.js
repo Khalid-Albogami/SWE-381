@@ -3,6 +3,7 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const Stadium = require('../models/Stadium');
 const Slot = require('../models/Slot');
+const Pitch = require('../models/Pitch');
 
 function photoPaths(files) {
   return (files || []).map((f) => `/uploads/stadiums/${path.basename(f.path)}`);
@@ -129,6 +130,7 @@ exports.remove = async (req, res, next) => {
       fs.promises.unlink(abs).catch(() => {});
     }
     await Slot.deleteMany({ stadiumId: stadium._id });
+    await Pitch.deleteMany({ stadiumId: stadium._id });
     await stadium.deleteOne();
     res.json({ ok: true });
   } catch (e) {

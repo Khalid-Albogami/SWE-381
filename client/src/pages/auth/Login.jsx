@@ -57,7 +57,13 @@ export default function Login() {
         </Form>
         <p className="text-center text-secondary small mt-3 mb-0">
           New here?{' '}
-          <Link to="/register" className="text-success fw-medium">Create an account</Link>
+          <Link
+            to="/register"
+            state={location.state}
+            className="text-success fw-medium"
+          >
+            Create an account
+          </Link>
         </p>
       </Card.Body>
     </Card>

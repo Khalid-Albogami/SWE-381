@@ -1,10 +1,16 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Container, Card, Button, Row, Col, Alert, Form } from 'react-bootstrap';
-import { slots as slotsApi, stadiums as stadiumsApi } from '../../api/endpoints';
+import { Container, Card, Button, Row, Col, Alert, Form, Nav } from 'react-bootstrap';
+import {
+  slots as slotsApi,
+  stadiums as stadiumsApi,
+  pitches as pitchesApi,
+} from '../../api/endpoints';
 import { photoURL } from '../../api/axios';
 import SlotGrid from '../../components/SlotGrid';
 import AddressLine from '../../components/AddressLine';
+import PitchesPanel from '../../components/PitchesPanel';
+import SlotEditModal from '../../components/SlotEditModal';
 import { useToast, useConfirm } from '../../components/feedback';
 
 const SLOT_HOURS = 2;
@@ -19,55 +25,85 @@ export default function ManageStadium() {
   const toast = useToast();
   const confirm = useConfirm();
   const [stadium, setStadium] = useState(null);
+  const [pitches, setPitches] = useState([]);
+  const [selectedPitchId, setSelectedPitchId] = useState(null);
   const [dates, setDates] = useState([]);
   const [slots, setSlots] = useState([]);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [editingSlot, setEditingSlot] = useState(null);
   const fileInputRef = useRef(null);
 
-  const refresh = useCallback(async () => {
+  const refreshPitches = useCallback(async () => {
+    try {
+      const data = await pitchesApi.list(id);
+      setPitches(data);
+      if (data.length > 0) {
+        setSelectedPitchId((current) =>
+          current && data.some((p) => p._id === current) ? current : data[0]._id
+        );
+      } else {
+        setSelectedPitchId(null);
+      }
+    } catch (e) {
+      setError(e?.response?.data?.error || 'Failed to load pitches');
+    }
+  }, [id]);
+
+  const refreshSlots = useCallback(async () => {
     try {
       const data = await slotsApi.forStadium(id);
       setDates(data.dates);
       setSlots(data.slots);
     } catch (e) {
-      setError(e?.response?.data?.error || 'Failed to load');
+      setError(e?.response?.data?.error || 'Failed to load slots');
     }
   }, [id]);
 
   useEffect(() => {
     stadiumsApi.get(id).then(setStadium).catch(() => {});
-    refresh();
-  }, [id, refresh]);
+    refreshPitches();
+    refreshSlots();
+  }, [id, refreshPitches, refreshSlots]);
+
+  const visibleSlots = useMemo(
+    () => slots.filter((s) => s.pitchId === selectedPitchId),
+    [slots, selectedPitchId]
+  );
+  const selectedPitch = useMemo(
+    () => pitches.find((p) => p._id === selectedPitchId) || null,
+    [pitches, selectedPitchId]
+  );
 
   const createSlot = async (date, startTime) => {
+    if (!selectedPitchId) {
+      toast.error('Add a pitch first');
+      return;
+    }
     const startHour = Number(startTime.slice(0, 2));
     if (startHour + SLOT_HOURS >= 24) {
       toast.error(`Slots are ${SLOT_HOURS} hours long — cannot start later than 21:00`);
       return;
     }
     try {
-      await slotsApi.create({ stadiumId: id, date, startTime, endTime: plusSlotHours(startTime) });
-      refresh();
+      await slotsApi.create({
+        pitchId: selectedPitchId,
+        date,
+        startTime,
+        endTime: plusSlotHours(startTime),
+      });
+      refreshSlots();
     } catch (e) {
       toast.error(e?.response?.data?.error || 'Could not add slot');
     }
   };
 
-  const deleteSlot = async (slot) => {
-    const ok = await confirm({
-      title: 'Delete this slot?',
-      message: `${slot.date} at ${slot.startTime}`,
-      confirmLabel: 'Delete',
-      danger: true,
-    });
-    if (!ok) return;
-    try {
-      await slotsApi.remove(slot._id);
-      refresh();
-    } catch (e) {
-      toast.error(e?.response?.data?.error || 'Could not delete');
+  const handleSlotClick = (slot) => {
+    if (slot.status === 'reserved') {
+      toast.info('This slot is reserved — cannot edit');
+      return;
     }
+    setEditingSlot(slot);
   };
 
   const deletePhoto = async (filename) => {
@@ -167,20 +203,56 @@ export default function ManageStadium() {
         </Card>
       )}
 
-      <h2 className="h6 mb-1">Slots</h2>
-      <p className="text-secondary small">
-        Click an empty cell to add a 1-hour slot. Click a green cell to delete it. Red cells are reserved and locked.
-      </p>
-      {error && <Alert variant="danger">{error}</Alert>}
-      {dates.length > 0 && (
-        <SlotGrid
-          dates={dates}
-          slots={slots}
-          mode="manage"
-          onEmptyClick={createSlot}
-          onSlotClick={deleteSlot}
-        />
-      )}
+      <PitchesPanel stadiumId={id} pitches={pitches} onChange={() => { refreshPitches(); refreshSlots(); }} />
+
+      <Card className="shadow-sm">
+        <Card.Body>
+          <h2 className="h6 mb-2">Slots</h2>
+          {pitches.length === 0 ? (
+            <Alert variant="info" className="mb-0 small">
+              Add at least one pitch above before posting slots.
+            </Alert>
+          ) : (
+            <>
+              <Nav variant="pills" activeKey={selectedPitchId || ''} className="mb-3 flex-wrap">
+                {pitches.map((p) => (
+                  <Nav.Item key={p._id}>
+                    <Nav.Link
+                      eventKey={p._id}
+                      onClick={() => setSelectedPitchId(p._id)}
+                      className="px-3 py-1"
+                    >
+                      {p.name}
+                    </Nav.Link>
+                  </Nav.Item>
+                ))}
+              </Nav>
+              <p className="text-secondary small">
+                Click an empty cell to add a 2-hour slot. Click an existing slot to edit its
+                price or delete it.
+              </p>
+              {error && <Alert variant="danger">{error}</Alert>}
+              {dates.length > 0 && (
+                <SlotGrid
+                  dates={dates}
+                  slots={visibleSlots}
+                  mode="manage"
+                  onEmptyClick={createSlot}
+                  onSlotClick={handleSlotClick}
+                />
+              )}
+            </>
+          )}
+        </Card.Body>
+      </Card>
+
+      <SlotEditModal
+        slot={editingSlot}
+        pitch={selectedPitch}
+        show={!!editingSlot}
+        onHide={() => setEditingSlot(null)}
+        onChange={refreshSlots}
+      />
     </Container>
   );
 }

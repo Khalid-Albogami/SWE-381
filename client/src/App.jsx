@@ -16,6 +16,7 @@ import OwnerMessages from './pages/owner/OwnerMessages';
 
 import StadiumDetails from './pages/user/StadiumDetails';
 import ConfirmReservation from './pages/user/ConfirmReservation';
+import ReservationDetails from './pages/user/ReservationDetails';
 import MyReservations from './pages/user/MyReservations';
 import UserMessages from './pages/user/UserMessages';
 
@@ -49,6 +50,7 @@ export default function App() {
 
           <Route path="/stadiums/:stadiumId/reserve/:slotId" element={<User><ConfirmReservation /></User>} />
           <Route path="/reservations" element={<User><MyReservations /></User>} />
+          <Route path="/reservations/:slotId" element={<User><ReservationDetails /></User>} />
           <Route path="/messages" element={<User><UserMessages /></User>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />

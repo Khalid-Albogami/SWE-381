@@ -49,7 +49,8 @@ exports.mine = async (req, res, next) => {
   try {
     const reservations = await Slot.find({ reservedBy: req.user._id, status: 'reserved' })
       .sort({ date: 1, startTime: 1 })
-      .populate({ path: 'stadiumId', select: 'name location photos ownerId' });
+      .populate({ path: 'stadiumId', select: 'name location photos ownerId' })
+      .populate({ path: 'pitchId', select: 'name pricePerHour' });
     res.json(reservations);
   } catch (e) {
     next(e);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Card, Form, Button, Alert, Row, Col } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 
@@ -11,6 +11,7 @@ const ROLES = [
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'user' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -23,7 +24,8 @@ export default function Register() {
     setBusy(true);
     try {
       const user = await register(form);
-      navigate(user.role === 'owner' ? '/owner' : '/', { replace: true });
+      const from = location.state?.from?.pathname;
+      navigate(from || (user.role === 'owner' ? '/owner' : '/'), { replace: true });
     } catch (err) {
       setError(err?.response?.data?.error || 'Registration failed');
     } finally {
@@ -74,7 +76,13 @@ export default function Register() {
         </Form>
         <p className="text-center text-secondary small mt-3 mb-0">
           Already have an account?{' '}
-          <Link to="/login" className="text-success fw-medium">Sign in</Link>
+          <Link
+            to="/login"
+            state={location.state}
+            className="text-success fw-medium"
+          >
+            Sign in
+          </Link>
         </p>
       </Card.Body>
     </Card>

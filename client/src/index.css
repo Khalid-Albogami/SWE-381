@@ -176,23 +176,25 @@ body {
   font-weight: 500;
   opacity: 0.7;
 }
+.slot-chip-price {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-top: 1px;
+}
 .slot-chip:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.22);
 }
-.slot-chip:disabled,
-.slot-chip--disabled {
-  background: rgba(0, 0, 0, 0.25);
-  color: rgba(255, 255, 255, 0.35);
-  border-color: rgba(255, 255, 255, 0.05);
+.slot-chip:disabled {
   cursor: not-allowed;
 }
-.slot-chip--mine {
-  background: rgba(245, 158, 11, 0.18);
-  border-color: #f59e0b;
-  color: #fde68a;
+.slot-chip--booked {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.45);
 }
-.slot-chip--mine:hover:not(:disabled) { background: rgba(245, 158, 11, 0.28); }
+.slot-chip--booked:hover { background: rgba(0, 0, 0, 0.35); }
 
 .booking-empty {
   padding: 2rem 0;
@@ -201,16 +203,3 @@ body {
   text-align: center;
 }
 
-.booking-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
-}
-.booking-legend-item { display: inline-flex; align-items: center; gap: 0.375rem; }
-.legend-dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
-.legend-dot--available { background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255, 255, 255, 0.6); }
-.legend-dot--mine { background: #f59e0b; }
-.legend-dot--taken { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.2); }

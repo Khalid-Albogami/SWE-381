@@ -21,9 +21,18 @@ export const stadiums = {
   remove: (id) => api.delete(`/stadiums/${id}`).then((r) => r.data),
 };
 
+export const pitches = {
+  list: (stadiumId) =>
+    api.get('/pitches', { params: { stadiumId } }).then((r) => r.data),
+  create: (data) => api.post('/pitches', data).then((r) => r.data),
+  update: (id, data) => api.put(`/pitches/${id}`, data).then((r) => r.data),
+  remove: (id) => api.delete(`/pitches/${id}`).then((r) => r.data),
+};
+
 export const slots = {
   forStadium: (id) => api.get(`/slots/stadium/${id}`).then((r) => r.data),
   create: (data) => api.post('/slots', data).then((r) => r.data),
+  update: (id, data) => api.put(`/slots/${id}`, data).then((r) => r.data),
   remove: (id) => api.delete(`/slots/${id}`).then((r) => r.data),
 };
 

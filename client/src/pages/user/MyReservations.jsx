@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Container, ListGroup, Button, Spinner, Alert, Card } from 'react-bootstrap';
+import { Container, ListGroup, Button, Spinner, Alert, Card, Badge } from 'react-bootstrap';
 import { reservations as reservationsApi } from '../../api/endpoints';
 import { photoURL } from '../../api/axios';
 import { useToast, useConfirm } from '../../components/feedback';
+import { formatSAR } from '../../utils/currency';
 
 export default function MyReservations() {
   const toast = useToast();
@@ -58,30 +59,41 @@ export default function MyReservations() {
         {items.map((r) => {
           const s = r.stadiumId;
           return (
-            <ListGroup.Item key={r._id} className="d-flex align-items-center gap-3">
-              <div style={{ width: 96, height: 64, overflow: 'hidden', borderRadius: 6, background: '#e9ecef', flexShrink: 0 }}>
-                {s?.photos?.[0] && (
-                  <img
-                    src={photoURL(s.photos[0])}
-                    alt={s.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                )}
-              </div>
-              <div className="flex-grow-1">
-                <Link to={`/stadiums/${s?._id}`} className="fw-semibold text-decoration-none text-dark">
-                  {s?.name || 'Stadium'}
-                </Link>
-                <div className="text-secondary small">{s?.location?.city}</div>
-                <div className="small mt-1">{r.date} · {r.startTime}–{r.endTime}</div>
-              </div>
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={() => cancel(r._id, `${s?.name || 'Stadium'} · ${r.date} at ${r.startTime}`)}
+            <ListGroup.Item key={r._id} className="d-flex align-items-center gap-3 p-0">
+              <Link
+                to={`/reservations/${r._id}`}
+                className="d-flex align-items-center gap-3 flex-grow-1 text-decoration-none text-reset p-3"
               >
-                Cancel
-              </Button>
+                <div style={{ width: 96, height: 64, overflow: 'hidden', borderRadius: 6, background: '#e9ecef', flexShrink: 0 }}>
+                  {s?.photos?.[0] && (
+                    <img
+                      src={photoURL(s.photos[0])}
+                      alt={s.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )}
+                </div>
+                <div className="flex-grow-1">
+                  <div className="fw-semibold">{s?.name || 'Stadium'}</div>
+                  <div className="text-secondary small">
+                    {s?.location?.city}
+                    {r.pitchId?.name && <> · {r.pitchId.name}</>}
+                  </div>
+                  <div className="small mt-1">{r.date} · {r.startTime}–{r.endTime}</div>
+                </div>
+                <Badge bg="success-subtle" text="success-emphasis" className="fs-6 me-2">
+                  {formatSAR(r.price)}
+                </Badge>
+              </Link>
+              <div className="pe-3">
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={() => cancel(r._id, `${s?.name || 'Stadium'} · ${r.date} at ${r.startTime}`)}
+                >
+                  Cancel
+                </Button>
+              </div>
             </ListGroup.Item>
           );
         })}
