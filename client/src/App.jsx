@@ -15,6 +15,7 @@ import Statistics from './pages/owner/Statistics';
 import OwnerMessages from './pages/owner/OwnerMessages';
 
 import StadiumDetails from './pages/user/StadiumDetails';
+import ConfirmReservation from './pages/user/ConfirmReservation';
 import MyReservations from './pages/user/MyReservations';
 import UserMessages from './pages/user/UserMessages';
 
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/owner/stats" element={<Owner><Statistics /></Owner>} />
           <Route path="/owner/messages" element={<Owner><OwnerMessages /></Owner>} />
 
+          <Route path="/stadiums/:stadiumId/reserve/:slotId" element={<User><ConfirmReservation /></User>} />
           <Route path="/reservations" element={<User><MyReservations /></User>} />
           <Route path="/messages" element={<User><UserMessages /></User>} />
 

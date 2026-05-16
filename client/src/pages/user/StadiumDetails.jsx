@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Alert, Button, Spinner } from 'react-bootstrap';
 import {
   stadiums as stadiumsApi,
@@ -16,6 +16,7 @@ import { useToast, useConfirm } from '../../components/feedback';
 export default function StadiumDetails() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
@@ -65,19 +66,7 @@ export default function StadiumDetails() {
       return;
     }
     if (slot.status !== 'available') return;
-    const ok = await confirm({
-      title: 'Reserve this slot?',
-      message: `${slot.date} at ${slot.startTime}–${slot.endTime}`,
-      confirmLabel: 'Reserve',
-    });
-    if (!ok) return;
-    try {
-      await reservationsApi.reserve(slot._id);
-      toast.success('Slot reserved');
-      refresh();
-    } catch (e) {
-      toast.error(e?.response?.data?.error || 'Could not reserve');
-    }
+    navigate(`/stadiums/${id}/reserve/${slot._id}`);
   };
 
   if (error) return <Container className="py-4"><Alert variant="danger">{error}</Alert></Container>;
